@@ -1,5 +1,5 @@
 python3 train_ctl_model.py \
---config_file="configs/256_resnet50.yml" \
+--config_file="configs/transformers.yml" \
 DATASETS.NAMES 'market1501' \
 DATASETS.ROOT_DIR './data/' \
 SOLVER.IMS_PER_BATCH 16 \

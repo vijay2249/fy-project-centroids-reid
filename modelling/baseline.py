@@ -16,7 +16,7 @@ from utils.misc import get_backbone
 
 from .backbones.resnet import BasicBlock, Bottleneck, ResNet
 from .backbones.resnet_ibn_a import resnet50_ibn_a, resnet101_ibn_a
-
+from .backbones.make_model import make_model
 
 def weights_init_kaiming(m):
     classname = m.__class__.__name__
@@ -79,6 +79,8 @@ class Baseline(nn.Module):
             self.base = resnet50_ibn_a(last_stride)
         elif model_name == 'resnet101_ibn_a':
             self.base = resnet101_ibn_a(last_stride)
+        elif model_name == 'transformer':
+            self.base = make_model(cfg)
         self.model_name = model_name
 
         if pretrain_choice and not cfg.MODEL.RESUME_TRAINING and not cfg.TEST.ONLY_TEST:

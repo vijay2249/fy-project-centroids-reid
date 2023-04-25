@@ -16,12 +16,58 @@ _C = CN()
 # MODEL
 # -----------------------------------------------------------------------------
 _C.MODEL = CN()
+# Using cuda or cpu for training
+_C.MODEL.DEVICE = "cuda"
+# ID number of GPU
+_C.MODEL.DEVICE_ID = '0'
 # Name of backbone
-_C.MODEL.NAME = "resnet50"
-# Size of embeddings from backbone
-_C.MODEL.BACKBONE_EMB_SIZE = 2048
+_C.MODEL.NAME = 'resnet50'
 # Last stride of backbone
 _C.MODEL.LAST_STRIDE = 1
+# Path to pretrained model of backbone
+_C.MODEL.PRETRAIN_PATH = ''
+
+# Use ImageNet pretrained model to initialize backbone or use self trained model to initialize the whole model
+# Options: 'imagenet' , 'self' , 'finetune'
+_C.MODEL.PRETRAIN_CHOICE = 'imagenet'
+
+# If train with BNNeck, options: 'bnneck' or 'no'
+_C.MODEL.NECK = 'bnneck'
+# If train loss include center loss, options: 'yes' or 'no'. Loss with center loss has different optimizer configuration
+_C.MODEL.IF_WITH_CENTER = 'no'
+
+_C.MODEL.ID_LOSS_TYPE = 'softmax'
+_C.MODEL.ID_LOSS_WEIGHT = 1.0
+_C.MODEL.TRIPLET_LOSS_WEIGHT = 1.0
+
+_C.MODEL.METRIC_LOSS_TYPE = 'triplet'
+# If train with multi-gpu ddp mode, options: 'True', 'False'
+_C.MODEL.DIST_TRAIN = False
+# If train with soft triplet loss, options: 'True', 'False'
+_C.MODEL.NO_MARGIN = False
+# If train with label smooth, options: 'on', 'off'
+_C.MODEL.IF_LABELSMOOTH = 'on'
+# If train with arcface loss, options: 'True', 'False'
+_C.MODEL.COS_LAYER = False
+
+# Transformer setting
+_C.MODEL.DROP_PATH = 0.1
+_C.MODEL.DROP_OUT = 0.0
+_C.MODEL.ATT_DROP_RATE = 0.0
+_C.MODEL.TRANSFORMER_TYPE = 'None'
+_C.MODEL.STRIDE_SIZE = [16, 16]
+
+# JPM Parameter
+_C.MODEL.JPM = False
+_C.MODEL.SHIFT_NUM = 5
+_C.MODEL.SHUFFLE_GROUP = 2
+_C.MODEL.DEVIDE_LENGTH = 4
+_C.MODEL.RE_ARRANGE = True
+
+# SIE Parameter
+_C.MODEL.SIE_COE = 3.0
+_C.MODEL.SIE_CAMERA = False
+_C.MODEL.SIE_VIEW = False
 # Use ImageNet pretrained model to initialize backbone or use 'self' trained
 # model to initialize the whole model
 # Options: True | False
@@ -71,7 +117,7 @@ _C.DATASETS.JSON_TRAIN_PATH = ""
 # -----------------------------------------------------------------------------
 _C.DATALOADER = CN()
 # Number of data loading threads
-_C.DATALOADER.NUM_WORKERS = 6
+_C.DATALOADER.NUM_WORKERS = 8
 # Sampler for data loading
 _C.DATALOADER.SAMPLER = "random_identity"
 # Number of instance for one batch
@@ -91,7 +137,13 @@ _C.SOLVER.OPTIMIZER_NAME = "Adam"
 # Number of max epoches
 _C.SOLVER.MAX_EPOCHS = 120
 # Base learning rate
-_C.SOLVER.BASE_LR = 1e-4
+_C.SOLVER.BASE_LR = 3e-4
+# Whether using larger learning rate for fc layer
+_C.SOLVER.LARGE_FC_LR = False
+# Factor of learning bias
+_C.SOLVER.BIAS_LR_FACTOR = 1
+# Factor of learning bias
+_C.SOLVER.SEED = 1234
 # Momentum
 _C.SOLVER.MOMENTUM = 0.9
 # Margin of triplet loss
@@ -112,20 +164,30 @@ _C.SOLVER.LR_SCHEDULER_NAME = "multistep_lr"
 # decay rate of learning rate
 _C.SOLVER.GAMMA = 0.1
 # decay step of learning rate
+_C.SOLVER.STEPS = (40, 70)
 _C.SOLVER.LR_STEPS = (40, 70)
 # warm up factor
 _C.SOLVER.USE_WARMUP_LR = True
-# epochs of warm up
-_C.SOLVER.WARMUP_EPOCHS = 10
+_C.SOLVER.WARMUP_FACTOR = 0.01
+#  warm up epochs
+_C.SOLVER.WARMUP_EPOCHS = 5
+# method of warm up, option: 'constant','linear'
+_C.SOLVER.WARMUP_METHOD = "linear"
+
+_C.SOLVER.COSINE_MARGIN = 0.5
+_C.SOLVER.COSINE_SCALE = 30
 # Metric name for checkpointing best model
 _C.SOLVER.MONITOR_METRIC_NAME = "mAP"
 # Metric value mode used for checkpointing (max, min, auto)
 _C.SOLVER.MONITOR_METRIC_MODE = "max"
 # epoch number of saving checkpoints
 _C.SOLVER.CHECKPOINT_PERIOD = 50
+_C.SOLVER.LOG_PERIOD = 100
 # epoch number of validation
-_C.SOLVER.EVAL_PERIOD = 5
-# Number of images per batch PER GPU
+_C.SOLVER.EVAL_PERIOD = 10
+# Number of images per batch
+# This is global, so if we have 8 GPUs and IMS_PER_BATCH = 128, each GPU will
+# contain 16 images per batch
 _C.SOLVER.IMS_PER_BATCH = 64
 # 'dp', 'ddp', 'ddp2', 'ddp_spawn' - see pytorch lighning options
 _C.SOLVER.DIST_BACKEND = "ddp"
@@ -138,15 +200,22 @@ _C.SOLVER.QUERY_CONTRASTIVE_WEIGHT = 1.0
 _C.SOLVER.CENTROID_CONTRASTIVE_WEIGHT = 1.0
 # Whether to use automatic Python Lightning optimization
 _C.SOLVER.USE_AUTOMATIC_OPTIM = False
-
+_C.SOLVER.PCA_K=256
 # ---------------------------------------------------------------------------- #
 # TEST
 # ---------------------------------------------------------------------------- #
+
 _C.TEST = CN()
 # Number of images per batch during test
 _C.TEST.IMS_PER_BATCH = 128
+# If test with re-ranking, options: 'True','False'
+_C.TEST.RE_RANKING = False
 # Path to trained model
 _C.TEST.WEIGHT = ""
+# Which feature of BNNeck to be used for test, before or after BNNneck, options: 'before' or 'after'
+_C.TEST.NECK_FEAT = 'after'
+# Whether feature is nomalized before test, if yes, it is equivalent to cosine distance
+_C.TEST.FEAT_NORM = 'yes'
 # # Whether feature is nomalized before test, if yes, it is equivalent to cosine distance
 _C.TEST.FEAT_NORM = True
 # Only run test
@@ -158,6 +227,10 @@ _C.TEST.VISUALIZE_TOPK = 10
 # Max number of query images plotted
 _C.TEST.VISUALIZE_MAX_NUMBER = 1000000
 
+# Name for saving the distmat after testing.
+_C.TEST.DIST_MAT = "dist_mat.npy"
+# Whether calculate the eval score option: 'True', 'False'
+_C.TEST.EVAL = False
 # ---------------------------------------------------------------------------- #
 # MISC
 # ---------------------------------------------------------------------------- #

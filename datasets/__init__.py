@@ -12,12 +12,14 @@ from .dukemtmcreid import DukeMTMCreID
 from .market1501 import Market1501
 from .df1 import DF1
 from .street2shop import Street2Shop
+from .mars import Mars
 
 __factory = {
     "market1501": Market1501,
     "dukemtmcreid": DukeMTMCreID,
     "df1": DF1,
     "street2shop": Street2Shop,
+    "mars": Mars,
 }
 
 

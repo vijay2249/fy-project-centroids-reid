@@ -23,7 +23,7 @@ from .samplers import get_sampler
 from .transforms import ReidTransforms
 
 
-class Market1501(ReidBaseDataModule):
+class Mars(ReidBaseDataModule):
     """
     Market1501
     Reference:
@@ -36,14 +36,14 @@ class Market1501(ReidBaseDataModule):
 
     Version that will not supply resampled instances
     """
-    dataset_dir = 'market1501'
+    dataset_dir = 'mars'
 
     def __init__(self, cfg, **kwargs):
         super().__init__(cfg, **kwargs)
         self.dataset_dir = osp.join(cfg.DATASETS.ROOT_DIR, self.dataset_dir)
-        self.train_dir = osp.join(self.dataset_dir, 'bounding_box_train')
+        self.train_dir = osp.join(self.dataset_dir, 'bbox_train')
         self.query_dir = osp.join(self.dataset_dir, 'query')
-        self.gallery_dir = osp.join(self.dataset_dir, 'bounding_box_test')
+        self.gallery_dir = osp.join(self.dataset_dir, 'bbox_test')
 
     def setup(self):
         self._check_before_run()
@@ -74,7 +74,7 @@ class Market1501(ReidBaseDataModule):
 
     def _process_dir(self, dir_path, relabel=False):
         img_paths = glob.glob(osp.join(dir_path, '*.jpg'))
-        pattern = re.compile(r'([-\d]+)_c(\d)')
+        pattern = re.compile(r'(\d{,4})C(\d)')
 
         pid_container = set()
         for img_path in img_paths:
@@ -91,7 +91,7 @@ class Market1501(ReidBaseDataModule):
             pid, camid = map(int, pattern.search(img_path).groups())
             if pid == -1:
                 continue  # junk images are just ignored
-            assert 0 <= pid <= 1501  # pid == 0 means background
+            assert 0 <= pid <= 1500  # pid == 0 means background
             assert 1 <= camid <= 6
             camid -= 1  # index starts from 0
             if relabel:
@@ -100,19 +100,3 @@ class Market1501(ReidBaseDataModule):
             dataset_dict[pid].append((img_path, pid, camid, idx))
 
         return dataset, dataset_dict
-
-    def get_imagedata_info_trans(self, data):
-        pids, cams, tracks = [], [], []
-
-        for _, pid, camid, trackid in data:
-            pids += [pid]
-            cams += [camid]
-            tracks += [trackid]
-        pids = set(pids)
-        cams = set(cams)
-        tracks = set(tracks)
-        num_pids = len(pids)
-        num_cams = len(cams)
-        num_imgs = len(data)
-        num_views = len(tracks)
-        return num_pids, num_imgs, num_cams, num_views

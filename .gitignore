@@ -3,7 +3,10 @@
 ./logs*
 ./debugs*
 ./mlruns*
-
+data/
+macpy/
+mlruns/
+*.ckpt
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

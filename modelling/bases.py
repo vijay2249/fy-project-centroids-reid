@@ -70,7 +70,7 @@ class ModelBase(pl.LightningModule):
         self.backbone = Baseline(self.hparams)
 
         self.contrastive_loss = TripletLoss(
-            self.hparams.SOLVER.MARGIN, self.hparams.SOLVER.DISTANCE_FUNC
+            self.hparams.SOLVER.MARGIN, self.hparams.SOLVER.DISTANCE_FUNC,self.hparams.SOLVER.PCA_K
         )
 
         d_model = self.hparams.MODEL.BACKBONE_EMB_SIZE
@@ -177,9 +177,7 @@ class ModelBase(pl.LightningModule):
         return {"emb": emb, "labels": class_labels, "camid": camid, "idx": idx}
 
     @rank_zero_only
-    def validation_create_centroids(
-        self, embeddings, labels, camids, respect_camids=False
-    ):
+    def validation_create_centroids(self, embeddings, labels, camids, respect_camids=False):
         num_query = self.hparams.num_query
         # Keep query data samples seperated
         embeddings_query = embeddings[:num_query].cpu()
@@ -391,3 +389,4 @@ class ModelBase(pl.LightningModule):
     @rank_zero_only
     def test_epoch_end(self, outputs):
         self.validation_epoch_end(outputs)
+

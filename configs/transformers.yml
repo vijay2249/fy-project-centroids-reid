@@ -1,0 +1,40 @@
+MODEL:
+  NAME: 'resnet50'
+  BACKBONE_EMB_SIZE: 2048
+  PRETRAIN_PATH: './models/resnet50-19c8e357.pth'
+  KEEP_CAMID_CENTROIDS: True
+
+INPUT:
+  SIZE_TRAIN: [256, 128]
+  SIZE_TEST: [256, 128]
+  PROB: 0.5 # random horizontal flip
+  RE_PROB: 0.5 # random erasing
+  PADDING: 10
+  PIXEL_MEAN: [0.5, 0.5, 0.5]
+  PIXEL_STD: [0.5, 0.5, 0.5]
+
+DATALOADER:
+  SAMPLER: 'softmax_triplet'
+  NUM_INSTANCE: 4
+  NUM_WORKERS: 8
+
+SOLVER:
+  BASE_LR: 0.0001
+  OPTIMIZER_NAME: "Adam"
+  MAX_EPOCHS: 150
+  EVAL_PERIOD: 40
+  IMS_PER_BATCH: 64
+  WARMUP_METHOD: 'linear'
+  LARGE_FC_LR: False
+  CHECKPOINT_PERIOD: 120
+  LOG_PERIOD: 50
+  WEIGHT_DECAY:  1e-4
+  WEIGHT_DECAY_BIAS: 1e-4
+  BIAS_LR_FACTOR: 2
+
+
+OUTPUT_DIR: '../logs/market_vit_transreid'
+
+USE_MIXED_PRECISION: True
+
+REPRODUCIBLE_NUM_RUNS: 3

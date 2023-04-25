@@ -6,7 +6,6 @@ DATASETS.ROOT_DIR '/home/cse04_197121/project/centroids-reid/data/' \
 SOLVER.IMS_PER_BATCH 16 \
 TEST.IMS_PER_BATCH 128 \
 SOLVER.BASE_LR 0.00035 \
-OUTPUT_DIR './logs/dukemtmcreid/256_resnet50' \
-DATALOADER.USE_RESAMPLING False \
-SOLVER.DISTANCE_FUNC 'cosine' \
-REPRODUCIBLE True  
+OUTPUT_DIR './logs/dukemtmcreid/256_resnet50/' \
+TEST.ONLY_TEST True \
+MODEL.PRETRAIN_PATH "/home/cse04_197121/project/centroids-reid/logs/dukemtmcreid/256_resnet50/train_ctl_model/version_0/checkpoints/epoch=119.ckpt"
