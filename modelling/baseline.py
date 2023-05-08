@@ -17,7 +17,7 @@ from utils.misc import get_backbone
 from .backbones.resnet import BasicBlock, Bottleneck, ResNet
 from .backbones.resnet_ibn_a import resnet50_ibn_a, resnet101_ibn_a
 from .backbones.make_model import make_model
-
+import config 
 def weights_init_kaiming(m):
     classname = m.__class__.__name__
     if classname.find('Linear') != -1:
@@ -46,7 +46,7 @@ class Baseline(nn.Module):
 
     def __init__(self, cfg):
         super(Baseline, self).__init__()
-
+        cfg=config.cfg 
         last_stride = cfg.MODEL.LAST_STRIDE
         model_path = cfg.MODEL.PRETRAIN_PATH
         model_name = cfg.MODEL.NAME
@@ -92,7 +92,13 @@ class Baseline(nn.Module):
 
     def forward(self, x):
         base_out = self.base(x)
-        global_feat = self.gap(base_out)
+        if(self.model_name=='transformer'):
+            if(isinstance(base_out,tuple)==True):
+                global_feat=base_out[1][0]
+            else:
+                global_feat=base_out[0]
+        else:
+            global_feat = self.gap(base_out)
         global_feat = global_feat.view(global_feat.shape[0], -1)
         
         return base_out, global_feat

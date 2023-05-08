@@ -11,8 +11,6 @@ Adapted and extended by:
 import torch
 import torch.nn.functional as F
 from torch import nn
-from config import defaults
-from torchmetrics.functional import pairwise_manhattan_distance
 
 
 def normalize(x, axis=-1):
@@ -38,27 +36,9 @@ def euclidean_dist(x, y):
     xx = torch.pow(x, 2).sum(1, keepdim=True).expand(m, n)
     yy = torch.pow(y, 2).sum(1, keepdim=True).expand(n, m).t()
     dist = xx + yy
-    dist.addmm_(x.float(), y.float().t(), beta=1, alpha=-2)
+    dist.addmm_(1, -2, x.float(), y.float().t())
     dist = dist.clamp(min=1e-12).sqrt()  # for numerical stability
     return dist
-
-# distance metric using https://xlinux.nist.gov/dads/HTML/lmdistance.html formula for m-dimension points
-def lm_metric(x,y):
-    """
-    Args:
-      x: pytorch Variable, with shape [m, d]
-      y: pytorch Variable, with shape [n, d]
-    Returns:
-      dist: pytorch Variable, with shape [m, n]
-    
-    Also considering that dtype=float for all the values in the tensor
-    Convert dtype to float if not (checking is not done)
-    """
-    a.unsqueeze_(0)
-    b.unsqueeze_(0)
-    dist = torch.cdist(x,y,p=10)
-    return dist
-
 
 
 def cosine_similarity(x:torch.Tensor,y:torch.Tensor, eps:float=1e-12) -> torch.Tensor:
@@ -74,26 +54,16 @@ def cosine_similarity(x:torch.Tensor,y:torch.Tensor, eps:float=1e-12) -> torch.T
     return sim_mt
 
 
-def cosine_dist(x:torch.Tensor,y:torch.Tensor,pca_k:int , eps:float=1e-12) -> torch.Tensor:
+def cosine_dist(x:torch.Tensor,y:torch.Tensor, eps:float=1e-12) -> torch.Tensor:
     """
     Computes cosine distance between two tensors.
     The cosine distance is the inverse cosine similarity 
     -> cosine_distance = abs(-cosine_distance) to make it
     similar in behaviour to euclidean distance
     """
-
     sim_mt = cosine_similarity(x,y, eps)
     return torch.abs(1-sim_mt).clamp(min=eps)
 
-def manhattan_dist(x,y):
-    """
-    Args:
-      x: pytorch Variable, with shape [m, d]
-      y: pytorch Variable, with shape [n, d]
-    Returns:
-      dist: pytorch Variable, with shape [m, n]
-    """
-    return pairwise_manhattan_distance(x, y)
 
 def hard_example_mining(dist_mat, labels, return_inds=False):
     """For each anchor, find the hardest positive and negative sample.
@@ -154,9 +124,8 @@ class TripletLoss(object):
     Related Triplet Loss theory can be found in paper 'In Defense of the Triplet
     Loss for Person Re-Identification'."""
 
-    def __init__(self, margin=None, dist_func='euclidean',pca_k=1024):
+    def __init__(self, margin=None, dist_func='euclidean'):
         self.margin = margin
-        self.pca_k=pca_k
         if margin is not None:
             self.ranking_loss = nn.MarginRankingLoss(margin=margin)
         else:
@@ -166,26 +135,11 @@ class TripletLoss(object):
             self.dist_func = cosine_dist
         elif dist_func == 'euclidean':
             self.dist_func = euclidean_dist
-        elif dist_func == 'lm_metric':
-            self.dist_func = lm_metric
-        elif dist_func == 'manhattan':
-            self.dist_func = manhattan_dist
 
-    def pca_then_dist(self,x:torch.Tensor,y:torch.Tensor):
-        _,_,v=torch.pca_lowrank(x)
-        x=torch.matmul(x,v[:,:self.pca_k])
-        _,_,v=torch.pca_lowrank(y)
-        y=torch.matmul(y,v[:,:self.pca_k])
-        return self.dist_func(x,y)
-    
     def __call__(self, global_feat, labels, warmup_margin=False, print_data=False, normalize_feature=False, mask=None):
         if normalize_feature:
             global_feat = normalize(global_feat, axis=-1)
-        # if self.dist_func==cosine_dist:
-        #     dist_mat=self.dist_func(global_feat,global_feat,self.pca_k)
-        # else:
-        #     dist_mat = self.dist_func(global_feat, global_feat)
-        dist_mat = self.pca_then_dist(global_feat,global_feat)
+        dist_mat = self.dist_func(global_feat, global_feat)
         dist_ap, dist_an = hard_example_mining(
             dist_mat, labels)
 

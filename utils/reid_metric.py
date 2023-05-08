@@ -17,16 +17,10 @@ import torch.nn.functional as F
 from torch import nn
 from tqdm import tqdm
 
-
-from config import defaults
-from torchmetrics.functional import pairwise_manhattan_distance
-
-
 from .eval_reid import eval_func
 
 from .visrank import visualize_ranked_results
 
-dataset = defaults._C.DATASETS.NAMES
 
 def get_euclidean(x, y, **kwargs):
     m = x.shape[0]
@@ -35,7 +29,7 @@ def get_euclidean(x, y, **kwargs):
         torch.pow(x, 2).sum(dim=1, keepdim=True).expand(m, n)
         + torch.pow(y, 2).sum(dim=1, keepdim=True).expand(n, m).t()
     )
-    distmat.addmm_(x, y.t(),beta=1, alpha=-2)
+    distmat.addmm_(1, -2, x, y.t())
     return distmat
 
 
@@ -64,61 +58,14 @@ def get_cosine(x: torch.Tensor, y: torch.Tensor, eps: float = 1e-12) -> torch.Te
     sim_mt = cosine_similarity(x, y, eps)
     return torch.abs(1 - sim_mt).clamp(min=eps)
 
-# distance metric using https://xlinux.nist.gov/dads/HTML/lmdistance.html formula for m-dimension points
-def get_lm_metric(x,y):
-    """
-    Args:
-      x: pytorch Variable, with shape [m, d]
-      y: pytorch Variable, with shape [n, d]
-    Returns:
-      dist: pytorch Variable, with shape [m, n]
-    """
-    x.unsqueeze_(0)
-    y.unxqueeze_(0)
-    dist = torch.cdist(x, y, p=10)
-    return dist
-
-def fract_metric(x,y):
-    """
-    Args:
-      x: pytorch Variable, with shape [m, d]
-      y: pytorch Variable, with shape [n, d]
-    Returns:
-      dist: pytorch Variable, with shape [m, n]
-    """
-    m, n, d = x.size(0), y.size(0), x.size(1) #sizes
-    d=0.4
-    xx = torch.pow(x, d).sum(1, keepdim=True).expand(m, n)
-    yy = torch.pow(y, d).sum(1, keepdim=True).expand(n, m).t()
-    dist = xx + yy
-    dist.addmm_(1, -2, x.float(), y.float().t())
-    dist = torch.pow(dist, 1/d)
-    # dist = dist.clamp(min=1e-12).sqrt()  # for numerical stability
-    return dist
-
-def get_manhattan(x,y):
-    """
-    Args:
-      x: pytorch Variable, with shape [m, d]
-      y: pytorch Variable, with shape [n, d]
-    Returns:
-      dist: pytorch Variable, with shape [m, n]
-    """
-    return pairwise_manhattan_distance(x, y)
 
 def get_dist_func(func_name="euclidean"):
     if func_name == "cosine":
         dist_func = get_cosine
     elif func_name == "euclidean":
         dist_func = get_euclidean
-    elif func_name == "lm_metric":
-        dist_func = get_lm_metric
-    elif func_name == "manhattan":
-        dist_func = get_manhattan
     print(f"Using {func_name} as distance function during evaluation")
     return dist_func
-
-
 
 
 class R1_mAP:
@@ -162,19 +109,18 @@ class R1_mAP:
             results.append(distmat_temp)
         return np.hstack(results)
 
-    # features depends on camids depending on the paramter is set to false or true(default is false)
     def compute(self, feats, pids, camids, respect_camids=False):
         if self.feat_norm:
             print("The test feature is normalized")
             feats = torch.nn.functional.normalize(feats, dim=1, p=2)
         # query
         qf = feats[: self.num_query]
-        q_pids = np.asarray(pids[: self.num_query])
-        q_camids = np.asarray(camids[: self.num_query])
+        q_pids = np.asarray(pids[: self.num_query], dtype=object)
+        q_camids = np.asarray(camids[: self.num_query], dtype=object)
         # gallery
         gf = feats[self.num_query :]
-        g_pids = np.asarray(pids[self.num_query :])
-        g_camids = np.asarray(camids[self.num_query :])
+        g_pids = np.asarray(pids[self.num_query :], dtype=object)
+        g_camids = np.asarray(camids[self.num_query :], dtype=object)
         m, n = qf.shape[0], gf.shape[0]
 
         if n > 30000 and self.pl_module.hparams.MODEL.USE_CENTROIDS:

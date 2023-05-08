@@ -1,11 +1,13 @@
 import torch
 import torch.nn as nn
+import sys
+sys.path.append("..")
+sys.path.append("...")
 from ..backbones.resnet import ResNet, Bottleneck
 import copy
 from ..backbones.vit_pytorch import vit_base_patch16_224_TransReID, vit_small_patch16_224_TransReID, deit_small_patch16_224_TransReID
-from ...datasets import init_dataset
-from loss.metric_learning import Arcface, Cosface, AMSoftmax, CircleLoss
-
+from datasets import init_dataset
+from .loss.metric_learning import Arcface, Cosface, AMSoftmax, CircleLoss
 
 def shuffle_unit(features, shift, group, begin=1):
 
@@ -129,6 +131,7 @@ class build_transformer(nn.Module):
     def __init__(self, num_classes, camera_num, view_num, cfg, factory):
         super(build_transformer, self).__init__()
         last_stride = cfg.MODEL.LAST_STRIDE
+        # trans_model_path = cfg.MODEL.TRANS_PRETRAIN_PATH
         model_path = cfg.MODEL.PRETRAIN_PATH
         model_name = cfg.MODEL.NAME
         pretrain_choice = cfg.MODEL.PRETRAIN_CHOICE
@@ -228,6 +231,7 @@ class build_transformer(nn.Module):
 class build_transformer_local(nn.Module):
     def __init__(self, num_classes, camera_num, view_num, cfg, factory, rearrange):
         super(build_transformer_local, self).__init__()
+        # trans_model_path = cfg.MODEL.TRANS_PRETRAIN_PATH
         model_path = cfg.MODEL.PRETRAIN_PATH
         pretrain_choice = cfg.MODEL.PRETRAIN_CHOICE
         self.cos_layer = cfg.MODEL.COS_LAYER
@@ -330,14 +334,12 @@ class build_transformer_local(nn.Module):
         self.rearrange = rearrange
 
     # label is unused if self.cos_layer == 'no'
-    def forward(self, x, label=None, cam_label=None, view_label=None):
-
-        features = self.base(x, cam_label=cam_label, view_label=view_label)
-
+    def forward(self, batch, label=None, cam_label=None, view_label=None):
+        x, class_labels, camid, isReal = batch  # batch is a tuple
+        features = self.base(x, cam_label=camid, view_label=isReal)
         # global branch
         b1_feat = self.b1(features)  # [64, 129, 768]
         global_feat = b1_feat[:, 0]
-
         # JPM branch
         feature_length = features.size(1) - 1
         patch_length = feature_length // self.divide_length
@@ -389,13 +391,13 @@ class build_transformer_local(nn.Module):
                         local_feat_4]  # global feature for triplet loss
         else:
             if self.neck_feat == 'after':
-                return torch.cat(
-                    [feat, local_feat_1_bn / 4, local_feat_2_bn / 4, local_feat_3_bn / 4, local_feat_4_bn / 4], dim=1)
+                return [feat, local_feat_1_bn / 4, local_feat_2_bn / 4, local_feat_3_bn / 4, local_feat_4_bn / 4]
             else:
-                return torch.cat(
-                    [global_feat, local_feat_1 / 4, local_feat_2 / 4, local_feat_3 / 4, local_feat_4 / 4], dim=1)
+                return [global_feat, local_feat_1 / 4, local_feat_2 / 4, local_feat_3 / 4, local_feat_4 / 4]
 
     def load_param(self, trained_path):
+        self.base.load_param(trained_path)
+        return 
         param_dict = torch.load(trained_path)
         for i in param_dict:
             self.state_dict()[i.replace('module.', '')].copy_(param_dict[i])
@@ -423,7 +425,7 @@ def make_model(cfg):
         cfg.DATASETS.NAMES, cfg=cfg, num_workers=cfg.DATALOADER.NUM_WORKERS
     )
     dm.setup()
-    num_class, _, camera_num, view_num = dm.get_imagedata_info_trans(dm.train)
+    num_class, _, camera_num, view_num = dm.num_pids, dm.num_imgs, dm.num_cams, dm.num_views 
     if cfg.MODEL.NAME == 'transformer':
         if cfg.MODEL.JPM:
             model = build_transformer_local(

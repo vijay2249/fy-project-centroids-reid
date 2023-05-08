@@ -69,6 +69,7 @@ class Market1501(ReidBaseDataModule):
             query)
         num_train_pids, num_train_imgs, num_train_cams = self._get_imagedata_info(
             train)
+        self.num_pids, self.num_imgs, self.num_cams, self.num_views = self.get_imagedata_info_trans(train)
         self.num_query = len(query)
         self.num_classes = num_train_pids
 

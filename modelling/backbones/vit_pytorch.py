@@ -28,8 +28,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch._six import container_abcs
-
-
+from config import cfg as configuration
 # From PyTorch internals
 def _ntuple(n):
     def parse(x):
@@ -381,7 +380,9 @@ class TransReID(nn.Module):
 
         if self.cam_num > 0 and self.view_num > 0:
             x = x + self.pos_embed + self.sie_xishu * self.sie_embed[camera_id * self.view_num + view_id]
-        elif self.cam_num > 0:
+        elif self.cam_num > 0:  
+            # print("x.size()=",x.size())
+            # print("self.pos_embed.size()=",self.pos_embed.size())
             x = x + self.pos_embed + self.sie_xishu * self.sie_embed[camera_id]
         elif self.view_num > 0:
             x = x + self.pos_embed + self.sie_xishu * self.sie_embed[view_id]
@@ -414,6 +415,11 @@ class TransReID(nn.Module):
         if 'state_dict' in param_dict:
             param_dict = param_dict['state_dict']
         for k, v in param_dict.items():
+            if 'backbone.base.base.' not in k:
+                continue
+            k=k.replace('backbone.base.base.','')
+            if 'backbone.base.' in k:
+                continue
             if 'head' in k or 'dist' in k:
                 continue
             if 'patch_embed.proj.weight' in k and len(v.shape) < 4:

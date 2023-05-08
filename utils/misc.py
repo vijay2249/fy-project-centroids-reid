@@ -162,11 +162,12 @@ def run_single(cfg, method, logger_save_dir):
 
 
 def run_main(cfg, method, logger_save_dir):
-    cfg.DATALOADER.NUM_WORKERS = int(multiprocessing.cpu_count() // len(cfg.GPU_IDS))
+    cfg.DATALOADER.NUM_WORKERS = int(multiprocessing.cpu_count() // len(cfg.GPU_IDS)) 
+    # => creating multipe zombie processes in parallel to work flow
+
     cfg.LOG_DIR = (
         f"logs/{cfg.DATASETS.NAMES}" if cfg.OUTPUT_DIR == "" else cfg.OUTPUT_DIR
     )
-
     if cfg.REPRODUCIBLE:
         for seed in range(
             cfg.REPRODUCIBLE_SEED, cfg.REPRODUCIBLE_SEED + cfg.REPRODUCIBLE_NUM_RUNS

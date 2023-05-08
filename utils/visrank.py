@@ -58,13 +58,13 @@ def visualize_ranked_results(
     respect_camids = cfg.MODEL.USE_CENTROIDS & cfg.MODEL.KEEP_CAMID_CENTROIDS
 
     if cfg.MODEL.USE_CENTROIDS:
-        gallery_list = np.asarray(dataset[num_q:])
-        labels_gallery = np.asarray([int(item[1]) for item in gallery_list])
+        gallery_list = np.asarray(dataset[num_q:], dtype=object)
+        labels_gallery = np.asarray([int(item[1]) for item in gallery_list], dtype=object)
         camids = np.asarray(
             [int(item[2]) for item in [*dataset[:num_q], *gallery_list]]
-        )
+        , dtype=object)
 
-        labels_query = np.asarray([int(item[1]) for item in dataset[:num_q]])
+        labels_query = np.asarray([int(item[1]) for item in dataset[:num_q]], dtype=object)
 
         from collections import defaultdict
         import random

@@ -359,7 +359,7 @@ class BaseDatasetLabelledPerPid(Dataset):
         _len = len(list_of_samples)
         assert (
             _len > 1
-        ), f"len of samples for pid: {pid} is <=1. len: {len_}, samples: {list_of_samples}"
+        ), f"len of samples for pid: {pid} is <=1. len: {_len}, samples: {list_of_samples}"
 
         if _len < self.num_instances:
             choice_size = _len

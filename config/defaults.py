@@ -23,10 +23,13 @@ _C.MODEL.DEVICE_ID = '0'
 # Name of backbone
 _C.MODEL.NAME = 'resnet50'
 # Last stride of backbone
+_C.MODEL.BACKBONE_EMB_SIZE = 2048
+
 _C.MODEL.LAST_STRIDE = 1
 # Path to pretrained model of backbone
 _C.MODEL.PRETRAIN_PATH = ''
-
+# Path to tranformers pre-train path
+_C.MODEL.TRANS_PRETRAIN_PATH = ''
 # Use ImageNet pretrained model to initialize backbone or use self trained model to initialize the whole model
 # Options: 'imagenet' , 'self' , 'finetune'
 _C.MODEL.PRETRAIN_CHOICE = 'imagenet'
@@ -72,9 +75,7 @@ _C.MODEL.SIE_VIEW = False
 # model to initialize the whole model
 # Options: True | False
 _C.MODEL.PRETRAINED = True
-# Path to weights to load
-_C.MODEL.PRETRAIN_PATH = ""
-# Create centroids
+    # Create centroids
 _C.MODEL.USE_CENTROIDS = False
 # Ensures images to build centroids during retrieval
 # do not come from the same camera as the query
@@ -120,6 +121,7 @@ _C.DATALOADER = CN()
 _C.DATALOADER.NUM_WORKERS = 8
 # Sampler for data loading
 _C.DATALOADER.SAMPLER = "random_identity"
+_C.DATALOADER.TRANS_SAMPLER = "softmax"
 # Number of instance for one batch
 _C.DATALOADER.NUM_INSTANCE = 4
 # Whether to drop last not full batch

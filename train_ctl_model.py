@@ -19,11 +19,10 @@ from pytorch_lightning.utilities import AttributeDict, rank_zero_only
 from torch import tensor
 from tqdm import tqdm
 
-from config import cfg
 from modelling.bases import ModelBase
 from utils.misc import run_main
 
-
+import config 
 class CTLModel(ModelBase):
     def __init__(self, cfg=None, **kwargs):
         super().__init__(cfg, **kwargs)
@@ -52,11 +51,14 @@ class CTLModel(ModelBase):
         opt.zero_grad()
 
         x, class_labels, camid, isReal = batch  # batch is a tuple
-
+        print("isReal dtype:"*10,isReal.dtype)
         unique_classes = len(np.unique(class_labels.detach().cpu()))
 
         # Get backbone features
-        _, features = self.backbone(x)
+        if config.cfg.MODEL.NAME == 'transformer':
+            _, features = self.backbone(batch)
+        else:
+            _, features = self.backbone(x)
 
         # query
         contrastive_loss_query, _, _ = self.contrastive_loss(
@@ -84,6 +86,8 @@ class CTLModel(ModelBase):
 
         masks, labels_list = self.create_masks_train(class_labels)  ## True for gallery
         masks = masks.to(features.device)
+        print("dtype "*10,masks.dtype,t_re.dtype)
+
         masks = masks & t_re
 
         masks_float = masks.float().to(features.device)
@@ -194,9 +198,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.config_file != "":
-        cfg.merge_from_file(args.config_file)
-    cfg.merge_from_list(args.opts)
+        config.cfg.merge_from_file(args.config_file)
+    config.cfg.merge_from_list(args.opts)
 
     logger_save_dir = f"{Path(__file__).stem}"
-
-    run_main(cfg, CTLModel, logger_save_dir)
+    run_main(config.cfg, CTLModel, logger_save_dir)

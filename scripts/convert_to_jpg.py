@@ -64,8 +64,7 @@ if __name__ == "__main__":
         f"Processing images dir: {source_dir}\nNumber of images to process: {len(images_source_list)}"
     )
 
-    with concurrent.futures.ThreadPoolExecutor(
-        max_workers=args.num_threads
+    with concurre
     ) as executor:
         executor.map(transform_image, images_source_list)
 

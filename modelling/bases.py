@@ -70,7 +70,7 @@ class ModelBase(pl.LightningModule):
         self.backbone = Baseline(self.hparams)
 
         self.contrastive_loss = TripletLoss(
-            self.hparams.SOLVER.MARGIN, self.hparams.SOLVER.DISTANCE_FUNC,self.hparams.SOLVER.PCA_K
+            self.hparams.SOLVER.MARGIN, self.hparams.SOLVER.DISTANCE_FUNC
         )
 
         d_model = self.hparams.MODEL.BACKBONE_EMB_SIZE
@@ -172,7 +172,10 @@ class ModelBase(pl.LightningModule):
         self.bn.eval()
         x, class_labels, camid, idx = batch
         with torch.no_grad():
-            _, emb = self.backbone(x)
+            if(self.hparams.MODEL.NAME=='transformer'):
+                _,emb = self.backbone(batch)
+            else:
+                _, emb = self.backbone(x)
             emb = self.bn(emb)
         return {"emb": emb, "labels": class_labels, "camid": camid, "idx": idx}
 
@@ -296,6 +299,7 @@ class ModelBase(pl.LightningModule):
 
     def validation_epoch_end(self, outputs):
         if self.trainer.global_rank == 0 and self.trainer.local_rank == 0:
+            # print([x for x in outputs])
             embeddings = torch.cat([x.pop("emb") for x in outputs]).detach().cpu()
             labels = (
                 torch.cat([x.pop("labels") for x in outputs]).detach().cpu().numpy()

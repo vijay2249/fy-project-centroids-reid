@@ -82,12 +82,12 @@ def eval_func(
         single_performance.append(list([q_idx, q_pid, AP]))
         # Get topk accuracy for topk
         topk_results.append(top_k_retrieval(orig_cmc, k_list))
-        try:
-            with open(f"../../logs/{dataset}/all_AP_performance.log", "a") as f:
-                print(single_performance, file=f)
-        except FileNotFoundError:
-            with open(f"../../logs/{dataset}/all_AP_performance.log", "w") as f:
-                print(single_performance, file=f)
+        # try:
+        #     with open(f"../../logs/{dataset}/all_AP_performance.log", "a") as f:
+        #         print(single_performance, file=f)
+        # except FileNotFoundError:
+        #     with open(f"../../logs/{dataset}/all_AP_performance.log", "w") as f:
+        #         print(single_performance, file=f)
 
     all_cmc = np.asarray(all_cmc).astype(np.float32)
     all_cmc = all_cmc.sum(0) / num_valid_q
